@@ -1,0 +1,38 @@
+# Caddy reverse proxy for *.home.lan internal services.
+# All hostnames resolve to this host via a DNS rewrite (*.home.lan -> 10.0.0.10),
+# e.g. an AdGuard Home / Pi-hole / router DNS rewrite.
+#
+# Replace `home.lan`, the IP `10.0.0.10`, and the service blocks below with your own.
+{
+	# Force internal CA — *.lan is not a real TLD, public ACME would fail.
+	local_certs
+	email admin@example.com
+	# Uncomment to debug:
+	# debug
+}
+
+# ----- HTTP upstreams (plain) -----
+# Example services. Each block: <hostname> { reverse_proxy <host>:<port> }
+
+adguard.home.lan {
+	reverse_proxy 10.0.0.10:3000
+}
+
+grafana.home.lan {
+	reverse_proxy 10.0.0.10:3002
+}
+
+app.home.lan {
+	reverse_proxy 10.0.0.10:8080
+}
+
+# ----- HTTPS upstreams (self-signed upstream, skip verification) -----
+# Use this form when the upstream serves HTTPS-only with a self-signed cert.
+
+portainer.home.lan {
+	reverse_proxy https://10.0.0.10:9443 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
