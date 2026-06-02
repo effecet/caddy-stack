@@ -1,6 +1,6 @@
-.PHONY: help validate up down restart logs deploy info
+.PHONY: help validate up down restart reload logs deploy deploy-portainer info
 
-# Load .env if present (for PORTAINER_WEBHOOK)
+# Load .env if present (only needed for the optional Portainer deploy path)
 ifneq (,$(wildcard ./.env))
     include .env
     export
@@ -16,19 +16,26 @@ validate:       ## Validate Caddyfile via Docker
 	docker run --rm -v $(PWD)/Caddyfile:/etc/caddy/Caddyfile:ro caddy:2-alpine \
 		caddy validate --config /etc/caddy/Caddyfile
 
-up:             ## Start Caddy locally (testing)
+up:             ## Start Caddy
 	docker compose up -d
 
-down:           ## Stop local Caddy
+down:           ## Stop Caddy
 	docker compose down
 
-restart:        ## Restart local Caddy
+restart:        ## Restart Caddy
 	docker compose restart
 
-logs:           ## Tail local Caddy logs
+reload:         ## Hot-reload the Caddyfile (no downtime, no restart)
+	docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+
+logs:           ## Tail Caddy logs
 	docker compose logs -f caddy
 
-deploy:         ## Push to git + trigger Portainer redeploy
+deploy:         ## Pull config + (re)start Caddy
+	docker compose up -d
+	@echo "Caddy is up. Edited the Caddyfile? Run 'make reload' to apply with no downtime."
+
+deploy-portainer: ## Optional: push to git + trigger a Portainer redeploy webhook (see README)
 	@if [ -z "$$PORTAINER_WEBHOOK" ]; then \
 		echo "ERROR: PORTAINER_WEBHOOK not set. Copy .env.example to .env and fill it in."; \
 		exit 1; \
